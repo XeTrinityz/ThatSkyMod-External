@@ -40,6 +40,28 @@ pub(crate) struct ForegroundWindow {
   pub(crate) class_name: String,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct OffsetsResponse {
+  pub(crate) invincibility: u64,
+  pub(crate) run_speed: u64,
+  pub(crate) default_run_speed: f32,
+  pub(crate) infinite_energy: u64,
+  pub(crate) infinite_breath: u64,
+  pub(crate) anti_rain_drain: u64,
+  pub(crate) anti_afk: u64,
+  pub(crate) super_jump: u64,
+  pub(crate) super_swim: u64,
+  pub(crate) super_flight: u64,
+  pub(crate) anti_sink: u64,
+  pub(crate) disable_cam_snap: u64,
+  pub(crate) free_zoom: u64,
+  pub(crate) disable_cam_rotation: u64,
+  pub(crate) first_person: u64,
+  pub(crate) show_cursor: u64,
+  pub(crate) super_run_patch: u64,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub(crate) struct AppSettings {

@@ -29,6 +29,7 @@ pub fn run() {
       Ok(())
     })
     .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+    .plugin(tauri_plugin_shell::init())
     .invoke_handler(tauri::generate_handler![
       commands::apply_patch,
       commands::apply_nop,
@@ -42,6 +43,7 @@ pub fn run() {
       settings::load_settings,
       settings::save_settings,
       commands::get_foreground_window_class,
+      commands::get_offsets,
       commands::close_game,
       commands::launch_game
     ])

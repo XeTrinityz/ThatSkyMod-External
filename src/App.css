@@ -219,6 +219,109 @@
   position: relative;
 }
 
+.wm-about {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: radial-gradient(
+      900px 360px at 10% 0%,
+      color-mix(in srgb, var(--accent) 18%, transparent),
+      transparent
+    ),
+    linear-gradient(180deg, rgba(9, 12, 16, 0.95), rgba(7, 9, 12, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wm-about__hero {
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  gap: 12px;
+}
+
+.wm-about__badge {
+  align-self: start;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #00110d;
+  background: color-mix(in srgb, var(--accent) 75%, white);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.wm-about__hero h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+}
+
+.wm-about__hero p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.wm-about__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.wm-about__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.wm-about__panel {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  gap: 6px;
+}
+
+.wm-about__panel-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.wm-about__panel-value {
+  font-weight: 650;
+  font-size: 1.05rem;
+}
+
+.wm-about__link {
+  color: color-mix(in srgb, var(--accent) 70%, white);
+  text-decoration: none;
+  font-weight: 600;
+  word-break: break-word;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wm-about__link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .wm-about__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .wm-tooltip::after {
   content: attr(data-tooltip);
   position: absolute;

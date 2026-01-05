@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { invoke, isTauri } from '@tauri-apps/api/core'
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
 import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut'
+import { open } from '@tauri-apps/plugin-shell'
 import { listen } from '@tauri-apps/api/event'
 import './App.css'
 
@@ -40,6 +41,26 @@ type AppSettings = {
 
 type ForegroundWindow = {
   className: string
+}
+
+type OffsetsResponse = {
+  invincibility: number
+  runSpeed: number
+  defaultRunSpeed: number
+  infiniteEnergy: number
+  infiniteBreath: number
+  antiRainDrain: number
+  antiAfk: number
+  superJump: number
+  superSwim: number
+  superFlight: number
+  antiSink: number
+  disableCamSnap: number
+  freeZoom: number
+  disableCamRotation: number
+  firstPerson: number
+  showCursor: number
+  superRunPatch: number
 }
 
 const categories: { id: CategoryKey; label: string; icon: ReactElement }[] = [
@@ -122,119 +143,132 @@ const themeOptions: Array<{
   },
 ]
 
-const playerToggles: FeatureToggle[] = [
-  {
-    id: 'godmode',
-    label: 'Godmode',
-    desc: 'Enables invincibility against all damage sources',
-    ops: [{ type: 'patch', offset: 0x2ff40e2, bytes: [0x01] }],
-  },
-  {
-    id: 'infinite-energy',
-    label: 'Infinite Energy',
-    desc: 'Never run out of wing energy',
-    ops: [{ type: 'patch', offset: 0x2ff40e1, bytes: [0x01] }],
-  },
-  {
-    id: 'infinite-breath',
-    label: 'Infinite Breath',
-    desc: 'Never run out of breath underwater',
-    ops: [{ type: 'nop', offset: 0x1a5dad2, size: 6 }],
-  },
-  {
-    id: 'anti-rain',
-    label: 'Anti Rain Drain',
-    desc: 'Prevents rain from draining your light',
-    ops: [{ type: 'patch', offset: 0x2ff40e6, bytes: [0x01] }],
-  },
-  {
-    id: 'anti-afk',
-    label: 'Anti AFK',
-    desc: 'Prevents entering AFK state when idle',
-    ops: [{ type: 'patch', offset: 0x286b3fc, bytes: [0x00] }],
-  },
-]
+const buildToggleSets = (offsets: OffsetsResponse | null) => {
+  if (!offsets) {
+    return {
+      playerToggles: [] as FeatureToggle[],
+      movementToggles: [] as FeatureToggle[],
+      cameraToggles: [] as FeatureToggle[],
+      settingsToggles: [] as FeatureToggle[],
+    }
+  }
 
-const movementToggles: FeatureToggle[] = [
-  {
-    id: 'super-jump',
-    label: 'Super Jump',
-    desc: 'Jump further',
-    ops: [
-      {
-        type: 'patch',
-        offset: 0x23117ec,
-        bytes: [0x00, 0x00, 0x20, 0x41, 0x9a],
-      },
-    ],
-  },
-  {
-    id: 'super-swim',
-    label: 'Super Swim',
-    desc: 'Swim faster',
-    ops: [
-      {
-        type: 'patch',
-        offset: 0x27bd7e0,
-        bytes: [0x00, 0x00, 0x48, 0x42, 0x6f],
-      },
-    ],
-  },
-  {
-    id: 'super-flight',
-    label: 'Super Flight',
-    desc: 'Fly faster',
-    ops: [
-      {
-        type: 'patch',
-        offset: 0xa5c842,
-        bytes: [0xc7, 0x01, 0x00, 0x00, 0xc8, 0x42],
-      },
-    ],
-  },
-  {
-    id: 'anti-sink',
-    label: 'Anti Sink',
-    desc: 'Prevents sinking in water',
-    ops: [{ type: 'float', offset: 0x27bda30, value: 100.0 }],
-  },
-]
+  const playerToggles: FeatureToggle[] = [
+    {
+      id: 'godmode',
+      label: 'Godmode',
+      desc: 'Enables invincibility against all damage sources',
+      ops: [{ type: 'patch', offset: offsets.invincibility, bytes: [0x01] }],
+    },
+    {
+      id: 'infinite-energy',
+      label: 'Infinite Energy',
+      desc: 'Never run out of wing energy',
+      ops: [{ type: 'patch', offset: offsets.infiniteEnergy, bytes: [0x01] }],
+    },
+    {
+      id: 'infinite-breath',
+      label: 'Infinite Breath',
+      desc: 'Never run out of breath underwater',
+      ops: [{ type: 'nop', offset: offsets.infiniteBreath, size: 6 }],
+    },
+    {
+      id: 'anti-rain',
+      label: 'Anti Rain Drain',
+      desc: 'Prevents rain from draining your light',
+      ops: [{ type: 'patch', offset: offsets.antiRainDrain, bytes: [0x01] }],
+    },
+    {
+      id: 'anti-afk',
+      label: 'Anti AFK',
+      desc: 'Prevents entering AFK state when idle',
+      ops: [{ type: 'patch', offset: offsets.antiAfk, bytes: [0x00] }],
+    },
+  ]
 
-const cameraToggles: FeatureToggle[] = [
-  {
-    id: 'disable-cam-snap',
-    label: 'Disable Camera Snapping',
-    desc: 'Prevents camera from automatically snapping',
-    ops: [{ type: 'patch', offset: 0x27a7885, bytes: [0x00] }],
-  },
-  {
-    id: 'free-zoom',
-    label: 'Disable Zoom Restrictions',
-    desc: 'Removes limits on camera zoom',
-    ops: [{ type: 'nop', offset: 0x3579d5, size: 9 }],
-  },
-  {
-    id: 'disable-cam-rotation',
-    label: 'Disable Camera Rotation',
-    desc: 'Prevents camera from rotating',
-    ops: [{ type: 'nop', offset: 0x3530c8, size: 2 }],
-  },
-  {
-    id: 'first-person',
-    label: 'First Person',
-    desc: 'Enables first-person camera mode',
-    ops: [{ type: 'nop', offset: 0x2311854, size: 5 }],
-  },
-]
+  const movementToggles: FeatureToggle[] = [
+    {
+      id: 'super-jump',
+      label: 'Super Jump',
+      desc: 'Jump further',
+      ops: [
+        {
+          type: 'patch',
+          offset: offsets.superJump,
+          bytes: [0x00, 0x00, 0x20, 0x41, 0x9a],
+        },
+      ],
+    },
+    {
+      id: 'super-swim',
+      label: 'Super Swim',
+      desc: 'Swim faster',
+      ops: [
+        {
+          type: 'patch',
+          offset: offsets.superSwim,
+          bytes: [0x00, 0x00, 0x48, 0x42, 0x6f],
+        },
+      ],
+    },
+    {
+      id: 'super-flight',
+      label: 'Super Flight',
+      desc: 'Fly faster',
+      ops: [
+        {
+          type: 'patch',
+          offset: offsets.superFlight,
+          bytes: [0xc7, 0x01, 0x00, 0x00, 0xc8, 0x42],
+        },
+      ],
+    },
+    {
+      id: 'anti-sink',
+      label: 'Anti Sink',
+      desc: 'Prevents sinking in water',
+      ops: [{ type: 'float', offset: offsets.antiSink, value: 100.0 }],
+    },
+  ]
 
-const settingsToggles: FeatureToggle[] = [
-  {
-    id: 'show-cursor',
-    label: 'Show Cursor',
-    desc: 'Keeps the system cursor visible while in-game.',
-    ops: [{ type: 'patch', offset: 0x2f96890, bytes: [0x01] }],
-  },
-]
+  const cameraToggles: FeatureToggle[] = [
+    {
+      id: 'disable-cam-snap',
+      label: 'Disable Camera Snapping',
+      desc: 'Prevents camera from automatically snapping',
+      ops: [{ type: 'patch', offset: offsets.disableCamSnap, bytes: [0x00] }],
+    },
+    {
+      id: 'free-zoom',
+      label: 'Disable Zoom Restrictions',
+      desc: 'Removes limits on camera zoom',
+      ops: [{ type: 'nop', offset: offsets.freeZoom, size: 9 }],
+    },
+    {
+      id: 'disable-cam-rotation',
+      label: 'Disable Camera Rotation',
+      desc: 'Prevents camera from rotating',
+      ops: [{ type: 'nop', offset: offsets.disableCamRotation, size: 2 }],
+    },
+    {
+      id: 'first-person',
+      label: 'First Person',
+      desc: 'Enables first-person camera mode',
+      ops: [{ type: 'nop', offset: offsets.firstPerson, size: 5 }],
+    },
+  ]
+
+  const settingsToggles: FeatureToggle[] = [
+    {
+      id: 'show-cursor',
+      label: 'Show Cursor',
+      desc: 'Keeps the system cursor visible while in-game.',
+      ops: [{ type: 'patch', offset: offsets.showCursor, bytes: [0x01] }],
+    },
+  ]
+
+  return { playerToggles, movementToggles, cameraToggles, settingsToggles }
+}
 
 const DEFAULT_WINDOW_SIZE = { width: 1000, height: 760 }
 const COLLAPSE_HOTKEY_ID = 'toggle-collapse'
@@ -256,7 +290,9 @@ function App() {
     {}
   )
   const [settingsLoaded, setSettingsLoaded] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<'appearance' | 'window' | 'input' | 'display'>('appearance')
+  const [settingsTab, setSettingsTab] = useState<
+    'appearance' | 'window' | 'input' | 'display' | 'about'
+  >('appearance')
   const [collapsed, setCollapsed] = useState(false)
   const [expanding, setExpanding] = useState(false)
   const expandedSizeRef = useRef<{ width: number; height: number } | null>(null)
@@ -280,6 +316,8 @@ function App() {
   const [pendingSuperRunSpeed, setPendingSuperRunSpeed] = useState(20)
   const [toasts, setToasts] = useState<{ id: number; message: string; variant: 'error' | 'success' }[]>([])
 
+  const [offsets, setOffsets] = useState<OffsetsResponse | null>(null)
+
   const [categoryDirection, setCategoryDirection] = useState<'left' | 'right'>(
     'right'
   )
@@ -298,6 +336,7 @@ function App() {
   const settingsWindowRef = useRef<HTMLButtonElement | null>(null)
   const settingsInputRef = useRef<HTMLButtonElement | null>(null)
   const settingsDisplayRef = useRef<HTMLButtonElement | null>(null)
+  const settingsAboutRef = useRef<HTMLButtonElement | null>(null)
 
   const addToast = (message: string, variant: 'error' | 'success') => {
     const id = Date.now()
@@ -306,6 +345,30 @@ function App() {
       setToasts((current) => current.filter((toast) => toast.id !== id))
     }, 4000)
   }
+
+  useEffect(() => {
+    let active = true
+    const loadOffsets = async () => {
+      if (!(await isTauri())) return
+      try {
+        const result = await invoke<OffsetsResponse>('get_offsets')
+        if (!active) return
+        setOffsets(result)
+      } catch {
+        if (!active) return
+        setOffsets(null)
+      }
+    }
+    loadOffsets()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const { playerToggles, movementToggles, cameraToggles, settingsToggles } = useMemo(
+    () => buildToggleSets(offsets),
+    [offsets]
+  )
 
   const handleWindowAction = async (action: 'minimize' | 'close') => {
     if (!(await isTauri())) return
@@ -476,20 +539,20 @@ function App() {
     handleToggleState(feature, !Boolean(activeToggles[feature.id]))
   }
 
-const hotkeyTargetById = useMemo(() => {
+  const hotkeyTargetById = useMemo(() => {
     const entries = [
       ...playerToggles,
       ...movementToggles,
       ...cameraToggles,
       ...settingsToggles,
     ]
-    
-    type HotkeyTarget = 
+
+    type HotkeyTarget =
       | { type: 'feature'; feature: FeatureToggle }
       | { type: 'action'; action: () => void }
-    
+
     const map = new Map<string, HotkeyTarget>()
-    
+
     for (const feature of entries) {
       map.set(feature.id, { type: 'feature', feature })
     }
@@ -498,7 +561,7 @@ const hotkeyTargetById = useMemo(() => {
       action: () => handleCollapseToggle(),
     })
     return map
-  }, [handleCollapseToggle])
+  }, [handleCollapseToggle, playerToggles, movementToggles, cameraToggles, settingsToggles])
 
   useEffect(() => {
     activeTogglesRef.current = activeToggles
@@ -838,12 +901,13 @@ const hotkeyTargetById = useMemo(() => {
 
   const handleSuperRunApply = async () => {
     if (!attached) return
+    if (!offsets) return
     try {
       const value = pendingSuperRunSpeed
       if (!superRunEnabled) {
         setSuperRunEnabled(true)
         await applyOperation(
-          { type: 'patch', offset: 0x27bd818, bytes: [0x00] },
+          { type: 'patch', offset: offsets.superRunPatch, bytes: [0x00] },
           true
         )
       }
@@ -860,13 +924,14 @@ const hotkeyTargetById = useMemo(() => {
 
   const handleSuperRunReset = async () => {
     if (!attached) return
+    if (!offsets) return
     try {
       setSuperRunEnabled(false)
       await applyOperation(
-        { type: 'patch', offset: 0x27bd818, bytes: [0x00] },
+        { type: 'patch', offset: offsets.superRunPatch, bytes: [0x00] },
         false
       )
-      const value = 3.5
+      const value = offsets.defaultRunSpeed
       setPendingSuperRunSpeed(value)
       await invoke('reset_run_speed')
     } catch (err) {
@@ -959,7 +1024,9 @@ const hotkeyTargetById = useMemo(() => {
           ? settingsWindowRef.current
           : settingsTab === 'input'
             ? settingsInputRef.current
-            : settingsDisplayRef.current
+            : settingsTab === 'display'
+              ? settingsDisplayRef.current
+              : settingsAboutRef.current
     if (!target) return
     const containerRect = container.getBoundingClientRect()
     const targetRect = target.getBoundingClientRect()
@@ -1007,15 +1074,15 @@ const hotkeyTargetById = useMemo(() => {
 
   const filteredPlayer = useMemo(
     () => filterToggles(playerToggles),
-    [queryValue]
+    [playerToggles, queryValue]
   )
   const filteredMovement = useMemo(
     () => filterToggles(movementToggles),
-    [queryValue]
+    [movementToggles, queryValue]
   )
   const filteredCamera = useMemo(
     () => filterToggles(cameraToggles),
-    [queryValue]
+    [cameraToggles, queryValue]
   )
 
   const activeCount =
@@ -1192,7 +1259,7 @@ const hotkeyTargetById = useMemo(() => {
           baseWindowSizeRef.current = { ...DEFAULT_WINDOW_SIZE }
         }
         const base = baseWindowSizeRef.current
-const width = collapsed
+        const width = collapsed
           ? Math.round(520 * appScale)
           : Math.max(400, Math.round(base.width * appScale))
         const height = collapsed
@@ -1249,6 +1316,14 @@ const width = collapsed
     settingsLoaded,
     hotkeyCaptureActive,
   ])
+
+  const openExternal = async (url: string) => {
+    if (await isTauri()) {
+      await open(url)
+      return
+    }
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div
@@ -1687,6 +1762,16 @@ const width = collapsed
                         >
                           Display
                         </button>
+                        <button
+                          ref={settingsAboutRef}
+                          className={`wm-subtab ${
+                            settingsTab === 'about' ? 'active' : ''
+                          }`}
+                          onClick={() => setSettingsTab('about')}
+                          type="button"
+                        >
+                          About
+                        </button>
                       </div>
                     </div>
                     {settingsTab === 'appearance' && (
@@ -1816,6 +1901,50 @@ const width = collapsed
                                 Reset
                               </button>
                             </div>
+                          </div>
+                        </div>
+                      </section>
+                    )}
+                    {settingsTab === 'about' && (
+                      <section className="wm-about" aria-label="About">
+                        <div className="wm-about__hero">
+                          <div className="wm-about__badge">That Sky Mod</div>
+                          <h2>External Edition</h2>
+                          <p>
+                            Crafted by <strong>XeTrinityz</strong>. Open source and community-driven.
+                          </p>
+                          <div className="wm-about__actions">
+                            <button
+                              className="btn btn--primary"
+                              type="button"
+                              onClick={() => openExternal('https://github.com/XeTrinityz/ThatSkyMod-External')}
+                            >
+                              View on GitHub
+                            </button>
+                            <button
+                              className="btn btn--ghost"
+                              type="button"
+                              onClick={() => openExternal('https://github.com/XeTrinityz/ThatSkyMod-External/issues')}
+                            >
+                              Report an issue
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="wm-about__grid">
+                          <div className="wm-about__panel">
+                            <div className="wm-about__panel-label">Developer</div>
+                            <div className="wm-about__panel-value">XeTrinityz</div>
+                          </div>
+                          <div className="wm-about__panel">
+                            <div className="wm-about__panel-label">Repository</div>
+                            <button
+                              className="wm-about__link"
+                              type="button"
+                              onClick={() => openExternal('https://github.com/XeTrinityz/ThatSkyMod-External')}
+                            >
+                              github.com/XeTrinityz/ThatSkyMod-External
+                            </button>
                           </div>
                         </div>
                       </section>

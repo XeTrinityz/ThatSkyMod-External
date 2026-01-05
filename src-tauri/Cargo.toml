@@ -30,6 +30,7 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 tauri = { version = "2.9.5", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-global-shortcut = "2"
+tauri-plugin-shell = "2"
 obfstr = "0.4"
 ureq = { version = "2.10", default-features = true }
 bcdec_rs = "0.2"

@@ -11,7 +11,7 @@ use super::process::{
   resume_process_threads, suspend_process_threads,
 };
 use super::state::{
-  AttachResponse, ForegroundWindow, ProcessHandle, ProcessState, StatusResponse,
+  AttachResponse, ForegroundWindow, OffsetsResponse, ProcessHandle, ProcessState, StatusResponse,
 };
 use super::window::foreground_window_class;
 
@@ -150,10 +150,34 @@ pub(crate) fn get_foreground_window_class() -> Result<ForegroundWindow, String> 
 }
 
 #[tauri::command]
+pub(crate) fn get_offsets() -> OffsetsResponse {
+  OffsetsResponse {
+    invincibility: OFFSET_INVINCIBILITY as u64,
+    run_speed: OFFSET_RUN_SPEED as u64,
+    default_run_speed: DEFAULT_RUN_SPEED,
+    infinite_energy: OFFSET_INFINITE_ENERGY as u64,
+    infinite_breath: OFFSET_INFINITE_BREATH as u64,
+    anti_rain_drain: OFFSET_ANTI_RAIN_DRAIN as u64,
+    anti_afk: OFFSET_ANTI_AFK as u64,
+    super_jump: OFFSET_SUPER_JUMP as u64,
+    super_swim: OFFSET_SUPER_SWIM as u64,
+    super_flight: OFFSET_SUPER_FLIGHT as u64,
+    anti_sink: OFFSET_ANTI_SINK as u64,
+    disable_cam_snap: OFFSET_DISABLE_CAM_SNAP as u64,
+    free_zoom: OFFSET_FREE_ZOOM as u64,
+    disable_cam_rotation: OFFSET_DISABLE_CAM_ROTATION as u64,
+    first_person: OFFSET_FIRST_PERSON as u64,
+    show_cursor: OFFSET_SHOW_CURSOR as u64,
+    super_run_patch: OFFSET_SUPER_RUN_PATCH as u64,
+  }
+}
+
+#[tauri::command]
 pub(crate) fn set_invincibility(state: State<'_, ProcessState>, enabled: bool) -> Result<(), String> {
   let mut guard = state.inner.lock().map_err(|_| "State lock error".to_string())?;
   let handle = guard.as_mut().ok_or_else(|| "Process not attached".to_string())?;
   let address = handle.base + OFFSET_INVINCIBILITY;
+
   if enabled {
     if !handle.original.contains_key(&address) {
       let original = super::process::read_bytes(handle.handle, address, 1)?;
