@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>That Sky Mod External</h1>
+  <h1>That Sky Mod - External Edition</h1>
   <a href="https://github.com/XeTrinityz/ThatSkyMod-External/releases">
     <img src="https://img.shields.io/github/downloads/XeTrinityz/ThatSkyMod-External/total?style=for-the-badge" alt="Downloads">
   </a>
