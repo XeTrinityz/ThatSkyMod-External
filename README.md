@@ -5,7 +5,7 @@
   </a>
   <br>
     External variation of That Sky Mod for Sky: Children of the Light, built with Tauri + React. 
-    It attaches to `Sky.exe` and provides a clean desktop UI for toggles, emotes, spells, and session details.
+    It attaches to `Sky.exe` and provides a clean desktop UI for toggles such as Godmode, Super Flight and more.
   <br>
   <br>
 </div>
