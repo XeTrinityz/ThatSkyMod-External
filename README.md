@@ -4,12 +4,13 @@
     <img src="https://img.shields.io/github/downloads/XeTrinityz/ThatSkyMod-External/total?style=for-the-badge" alt="Downloads">
   </a>
   <br>
-    External variation of That Sky Mod for Sky: Children of the Light, built with Tauri + React. It attaches to `Sky.exe` and provides a clean desktop UI for toggles, emotes, spells, and session details.
+    External variation of That Sky Mod for Sky: Children of the Light, built with Tauri + React. 
+    It attaches to `Sky.exe` and provides a clean desktop UI for toggles such as Godmode, Super Flight and more.
+  <br>
+  <br>
 </div>
 
 ![UI Preview](./docs/screenshot.png)
-
----
 
 ## Features
 - Attach/detach from `Sky.exe` and show session/auth details
@@ -41,10 +42,6 @@ npm run tauri:build
 - `src-tauri/` - Rust backend and Tauri config
 - `public/` - Static assets
 - `dist/` - Frontend build output
-
-## Notes
-- Windows-first: expects `Sky.exe` to be running when attaching.
-- Not affiliated with or endorsed by thatgamecompany.
 
 ---
 This project is not affiliated with thatgamecompany (TGC) or Sky: Children of the Light.
